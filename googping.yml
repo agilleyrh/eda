@@ -1,0 +1,27 @@
+---
+- name: Test connectivity to www.google.com
+  hosts: localhost  # Run on the machine executing the playbook
+  connection: local # Use local connection type
+  gather_facts: no  # Skip fact gathering for speed
+  
+  tasks:
+    - name: Check reachability of www.google.com via HTTPS
+      ansible.builtin.uri:
+        url: https://www.google.com  # Target URL (using HTTPS)
+        method: GET                # Use simple GET request
+        return_content: no         # We don't need the HTML body, just the status
+        timeout: 10                # Set a 10-second timeout
+      register: google_check_result
+      ignore_errors: yes           # Prevent playbook from halting immediately on connection error
+
+    - name: Display connection status
+      ansible.builtin.debug:
+        msg: >
+          Attempt to connect to {{ google_check_result.url }} 
+          Status: {{ google_check_result.status | default('N/A (Error/Timeout)') }}
+          Message: {{ google_check_result.msg | default('N/A') }}
+
+    - name: Fail playbook if connection was unsuccessful
+      ansible.builtin.fail:
+        msg: "Failed to connect successfully to {{ google_check_result.url }}. Status code {{ google_check_result.status }}"
+      when: google_check_result.status == -1 or google_check_result.status >= 400 # Fail on connection errors (-1) or HTTP error codes (4xx, 5xx)
