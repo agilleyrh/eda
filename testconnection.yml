@@ -1,16 +1,22 @@
 ---
 - name: Test Controller Connection Rulebook
-  hosts: localhost
+  hosts: localhost # Or appropriate host scope
   sources:
-  
+    # Use a simple source for easy triggering:
     - ansible.eda.range:
-        limit: 1
+        limit: 1 # Fire just once for the test
 
+    # OR use a webhook if you prefer:
+    # - ansible.eda.webhook:
+    #     host: 0.0.0.0
+    #     port: 5001 # Use a specific port for testing
   rules:
     - name: Trigger test job on controller
-      condition: event.i == 0
-
+      condition: event.i == 0 # Condition for range source
+      # condition: event.payload.test == "true" # Example condition for webhook
       action:
         run_job_template:
-          name: "EDA test"
-          organization: "Default"
+          name: "EDA test"   # Name of the Job Template on AAC 2.4
+          organization: "Default"    # Name of the Org on AAC 2.4
+          # Ensure EDA knows which credential to use (might be implicit or require explicit setting)
+          # controller_credential: "Name of Credential in EDA for AAC 2.4" # Verify syntax if needed
