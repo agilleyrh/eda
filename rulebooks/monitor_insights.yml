@@ -10,7 +10,7 @@
     - name: Listen for Pre-Filtered Insights Webhook Notifications
       ansible.eda.webhook:
         host: 0.0.0.0  # Listen on all interfaces within the container/pod
-        port: 5000    # IMPORTANT: Match the port exposed/forwarded for EDA listener
+        port: 8000    # IMPORTANT: Match the port exposed/forwarded for EDA listener
                       #            and used in the Insights Webhook URL config.
         # --- Security (Recommended) ---
         # Uncomment and configure if you set a Secret Token in Insights Webhook:
