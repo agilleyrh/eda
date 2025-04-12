@@ -16,7 +16,7 @@
       # condition: event.payload.test == "true" # Example condition for webhook
       action:
         run_job_template:
-          name: "My Simple Ping Test JT"   # Name of the Job Template on AAC 2.4
-          organization: "Your Org Name"    # Name of the Org on AAC 2.4
+          name: "EDA test"   # Name of the Job Template on AAC 2.4
+          organization: "Default"    # Name of the Org on AAC 2.4
           # Ensure EDA knows which credential to use (might be implicit or require explicit setting)
           # controller_credential: "Name of Credential in EDA for AAC 2.4" # Verify syntax if needed
