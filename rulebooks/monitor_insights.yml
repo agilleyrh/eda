@@ -28,7 +28,7 @@
       # before trying to access its contents in the action block.
       # The 'bundle' check can be kept for minor robustness or removed if unnecessary.
       condition: >
-        event.payload.bundle == "rhel" and  # Optional: Remove if only RHEL configured
+        event.payload.bundle == "rhel" and
         event.payload.events is defined and
         event.payload.events # Ensures list exists AND is not empty
 
