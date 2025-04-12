@@ -30,7 +30,7 @@
       condition: >
         event.payload.bundle == "rhel" and
         event.payload.events is defined and
-        event.payload.events # Ensures list exists AND is not empty
+        event.payload.events
 
       action:
         # --- Action 1: Debug (RECOMMENDED FIRST STEP!) ---
