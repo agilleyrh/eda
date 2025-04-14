@@ -1,43 +1,24 @@
 ---
 - name: Process Pre-Filtered Critical Vulnerability Events from Insights
-  hosts: localhost  # Rule processing usually runs locally within the DE
+  hosts: localhost
   gather_facts: false
 
-  ############################################################################
-  # Sources: Define how EDA receives events
-  ############################################################################
   sources:
     - name: Listen for Pre-Filtered Insights Webhook Notifications
       ansible.eda.webhook:
-        host: 0.0.0.0  # Listen on all interfaces within the container/pod
-        port: 8000    # IMPORTANT: Match the port exposed/forwarded for EDA listener
-                      #            and used in the Insights Webhook URL config.
-        # --- Security (Recommended) ---
-        # Uncomment and configure if you set a Secret Token in Insights Webhook:
-        # token_header: X-Insight-Token # Default header Insights uses
-        # token_secret: "{{ vault_insights_webhook_secret }}" # Use Ansible Vault
-
-  ############################################################################
-  # Rules: Define conditions and actions based on received events
-  ############################################################################
+        host: 0.0.0.0
+        port: 8000
+  
   rules:
-    # --- Rule for ANY event received (already pre-filtered by Insights) ---
     - name: Process Received Critical Vulnerability Finding
-      # Condition is now much simpler because filtering is done in Insights.
-      # We mainly just check that the expected 'events' list exists and is not empty
-      # before trying to access its contents in the action block.
-      # The 'bundle' check can be kept for minor robustness or removed if unnecessary.
       condition: >
         event.payload.bundle == "rhel" and
         event.payload.events is defined and
         event.payload.events
 
       action:
-        # --- Action 1: Debug (RECOMMENDED FIRST STEP!) ---
-        # Still important to verify the exact payload structure of these specific events
-        # to correctly configure the action below (e.g., extra_vars).
         debug:
-          msg: | # Using literal style to preserve newlines
+          msg: | 
             RECEIVED PRE-FILTERED CRITICAL VULNERABILITY EVENT:
             Timestamp: {{ event.payload.timestamp | default('N/A') }}
             System Display Name: {{ event.payload.context.system.display_name | default('N/A') }}
@@ -45,11 +26,10 @@
             Severity: {{ event.payload.events[0].metadata.severity | default('N/A') }} # Should always be Critical now
             Full Payload: {{ event.payload }}
 
-        # --- Action 2: Trigger Remediation Job (Example) ---
-        # Uncomment and configure *after* verifying payload with debug
+        # --- Action 2: Trigger Remediation Job ---
         # run_job_template:
-        #   name: "Remediate Critical CVE"  # Job Template name in your Controller
-        #   organization: "Your Org Name"   # Org name in your Controller
+        #   name: "Remediate Critical CVE"
+        #   organization: "Your Org Name"
         #   job_args:
         #     limit: "{{ event.payload.context.system.display_name | default(omit) }}" # Target the specific host
         #     extra_vars:
