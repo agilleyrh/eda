@@ -1,0 +1,36 @@
+---
+- name: Log Incoming Insights Events via Configured Event Stream
+  hosts: localhost  # Rule processing usually runs locally within the DE
+  gather_facts: no
+
+  ############################################################################
+  # Sources: Listen to the pre-configured EDA Event Stream
+  ############################################################################
+  sources:
+    - name: Listen to the existing Insights Event Stream
+      ansible.eda.event_stream:
+        # REQUIRED: Replace 'My Insights Event Stream' with the 
+        # EXACT name of the Event Stream resource in the EDA UI.
+        name: InsightsEventStream
+
+  ############################################################################
+  # Rules: Process events received FROM the Event Stream
+  ############################################################################
+  rules:
+    - name: Trigger logging job for any event from the stream
+      # Condition is 'true' to process every event received on this specific stream.
+      # Assumes the stream itself is only receiving desired Insights events.
+      condition: true 
+      action:
+        run_job_template:
+          # Name of the Job Template created in Automation Controller
+          name: "Insights Log" 
+          # Name of the Organization for the Job Template in Controller
+          # IMPORTANT: Replace with your actual Organization name
+          organization: "Default" 
+          job_args:
+            extra_vars:
+              # This key 'insights_payload' MUST match the 'vars:' 
+              # definition in the log_insights_payload.yml playbook.
+              # It sends the entire payload received from the stream.
+              insights_payload: "{{ event.payload }}"
