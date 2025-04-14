@@ -5,7 +5,7 @@
   sources:
     - name: Listen to the Insights Event Stream configured in EDA UI
       ansible.eda.event_stream:
-        name: Insights Event Stream 
+        name: Insights Event Stream
   rules:
     - name: Process Critical Vulnerability Finding from Event Stream
       condition: > 
