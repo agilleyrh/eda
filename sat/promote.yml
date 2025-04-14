@@ -1,0 +1,30 @@
+---
+- name: Publish and Promote Content View
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    content_view_name: "RHEL8_CV" # Example CV name
+    target_lifecycle_env: "Production" # Example target environment
+  tasks:
+    - name: Publish New Content View Version
+      theforeman.satellite.content_view_version:
+        username: "{{ satellite_username }}"
+        password: "{{ satellite_password }}"
+        server_url: "{{ satellite_server_url }}"
+        organization: "{{ satellite_organization }}"
+        content_view: "{{ content_view_name }}"
+        state: present # Ensures a new version is published if changes exist
+      register: cv_version_publish
+
+    - name: Promote Content View Version to Production
+      theforeman.satellite.content_view_version_promotion:
+        username: "{{ satellite_username }}"
+        password: "{{ satellite_password }}"
+        server_url: "{{ satellite_server_url }}"
+        organization: "{{ satellite_organization }}"
+        content_view: "{{ content_view_name }}"
+        lifecycle_environments:
+          - "{{ target_lifecycle_env }}"
+        version: "{{ cv_version_publish.version_info.version }}" # Promote the newly published version
+      when: cv_version_publish.changed # Only promote if a new version was published
