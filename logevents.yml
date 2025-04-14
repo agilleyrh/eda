@@ -1,0 +1,19 @@
+---
+- name: Log Full Insights Event Payload Received via EDA
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    # This variable name 'insights_payload' MUST match the key used 
+    # in the 'extra_vars' section of the EDA rulebook's action.
+    # Providing a default is good practice.
+    insights_payload: "ERROR: No payload received via extra_vars." 
+
+  tasks:
+    - name: Print the full received Insights payload
+      ansible.builtin.debug:
+        msg: |
+          --- EDA Triggered: Received Insights Event Payload ---
+          {{ insights_payload | to_nice_json }}
+          --- End Insights Event Payload ---
