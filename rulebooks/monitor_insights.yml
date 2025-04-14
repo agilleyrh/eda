@@ -1,40 +1,95 @@
 ---
-- name: Process Pre-Filtered Critical Vulnerability Events from Insights
-  hosts: localhost
+- name: Monitor Insights Critical Events via EDA Event Stream
+  hosts: localhost  # Rule processing usually runs locally within the DE
   gather_facts: false
 
+  ############################################################################
+  # Sources: Listen to the pre-configured EDA Event Stream
+  ############################################################################
   sources:
-    - name: Listen for Pre-Filtered Insights Webhook Notifications
-      ansible.eda.webhook:
-        host: 0.0.0.0
-        port: 8000
-  
-  rules:
-    - name: Process Received Critical Vulnerability Finding
-      condition: >
-        event.payload.bundle == "rhel" and
-        event.payload.events is defined and
-        event.payload.events
+    - name: Listen to the Insights Event Stream configured in EDA UI
+      ansible.eda.event_stream:
+        # IMPORTANT: Replace 'My Insights Event Stream' with the ACTUAL name 
+        #            you gave the Event Stream resource in the EDA Controller UI.
+        name: My Insights Event Stream 
+        # Host/Port/Token arguments are NOT needed here; they are configured
+        # on the Event Stream resource itself in the EDA UI.
 
+  ############################################################################
+  # Rules: Process events received FROM the Event Stream
+  ############################################################################
+  rules:
+    # --- Rule for Critical Vulnerability Events ---
+    # NOTE: The condition logic should be the same as when using the webhook
+    # source directly, as the event stream should pass the original payload.
+    # ALWAYS verify the payload structure with the debug action first.
+    - name: Process Critical Vulnerability Finding from Event Stream
+      condition: > 
+        event.payload.bundle == "rhel" and
+        event.payload.application == "vulnerability" and
+        event.payload.events is defined and
+        event.payload.events and  # Check list exists and is not empty
+        event.payload.events[0].metadata.severity is defined and
+        event.payload.events[0].metadata.severity == "Critical"
       action:
+        # --- Action 1: Debug (RECOMMENDED FIRST STEP!) ---
+        # Use debug to verify the payload structure passed through the stream.
         debug:
-          msg: | 
-            RECEIVED PRE-FILTERED CRITICAL VULNERABILITY EVENT:
+          msg: | # Using literal style to preserve newlines
+            EVENT STREAM received Critical Vulnerability Event:
+            Stream Source Name: {{ ansible_eda.source.name }} 
             Timestamp: {{ event.payload.timestamp | default('N/A') }}
             System Display Name: {{ event.payload.context.system.display_name | default('N/A') }}
-            CVE: {{ event.payload.events[0].payload.rule_id | default('N/A') }} # Assuming CVE ID is rule_id
-            Severity: {{ event.payload.events[0].metadata.severity | default('N/A') }} # Should always be Critical now
+            CVE: {{ event.payload.events[0].payload.rule_id | default('N/A') }}
+            Severity: {{ event.payload.events[0].metadata.severity | default('N/A') }}
             Full Payload: {{ event.payload }}
 
-        # --- Action 2: Trigger Remediation Job ---
+        # --- Action 2: Trigger Remediation Job (Example) ---
+        # Uncomment and configure *after* verifying payload with debug
         # run_job_template:
-        #   name: "Remediate Critical CVE"
-        #   organization: "Your Org Name"
+        #   name: "Remediate Critical CVE"  # Job Template name in your Controller
+        #   organization: "Your Org Name"   # Org name in your Controller
         #   job_args:
-        #     limit: "{{ event.payload.context.system.display_name | default(omit) }}" # Target the specific host
+        #     limit: "{{ event.payload.context.system.display_name | default(omit) }}" 
         #     extra_vars:
-        #       # Pass necessary info to your remediation playbook
         #       # ** ADJUST THESE BASED ON YOUR DEBUG OUTPUT **
         #       target_cve: "{{ event.payload.events[0].payload.rule_id | default(omit) }}"
         #       insights_context: "{{ event.payload.context | default(omit) }}"
-        #       # Add other vars as needed by your JT
+
+    # --- Rule for Critical Advisor Events ---
+    # (Similar structure, condition checks for application == "advisor")
+    - name: Process Critical Advisor Finding from Event Stream
+      condition: >
+        event.payload.bundle == "rhel" and
+        event.payload.application == "advisor" and
+        event.payload.events is defined and
+        event.payload.events and  # Check list exists and is not empty
+        event.payload.events[0].metadata.severity is defined and
+        event.payload.events[0].metadata.severity == "Critical"
+      action:
+        # --- Action 1: Debug ---
+        debug:
+          msg: | 
+            EVENT STREAM received Critical Advisor Event:
+            Stream Source Name: {{ ansible_eda.source.name }}
+            Timestamp: {{ event.payload.timestamp | default('N/A') }}
+            System Display Name: {{ event.payload.context.system.display_name | default('N/A') }}
+            Rule ID: {{ event.payload.events[0].payload.rule_id | default('N/A') }}
+            Description: {{ event.payload.events[0].payload.description | default('N/A') }}
+            Severity: {{ event.payload.events[0].metadata.severity | default('N/A') }}
+            Full Payload: {{ event.payload }}
+
+        # --- Action 2: Create Incident Ticket (Example) ---
+        # Uncomment and configure *after* verifying payload with debug
+        # run_job_template:
+        #   name: "Create ServiceNow Incident for Insights" 
+        #   organization: "Your Org Name"                 
+        #   job_args:
+        #     extra_vars:
+        #       # ** ADJUST THESE BASED ON YOUR DEBUG OUTPUT **
+        #       affected_host: "{{ event.payload.context.system.display_name | default(omit) }}"
+        #       short_description: "Critical Advisor Finding: {{ event.payload.events[0].payload.rule_id | default('Unknown Rule') }}"
+        #       long_description: "{{ event.payload.events[0].payload.description | default('N/A') }}"
+        #       rule_id: "{{ event.payload.events[0].payload.rule_id | default(omit) }}"
+
+    # --- Add more rules as needed ---
