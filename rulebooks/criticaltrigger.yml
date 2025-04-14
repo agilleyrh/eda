@@ -1,0 +1,29 @@
+---
+- name: Trigger Patch Workflow for Critical Insights Vulnerabilities via Event Stream
+  hosts: localhost 
+  gather_facts: no
+
+  sources:
+    - name: Listen to the configured Insights Event Stream 
+      ansible.eda.event_stream:
+        # Use the EXACT name of your Event Stream from EDA UI
+        name: InsightsEventStream 
+
+  rules:
+    - name: Trigger Patch Workflow on Critical Vulnerability Event
+      condition: > 
+        event.payload.application == "vulnerability" and
+        event.payload.events is defined and
+        event.payload.events and 
+        event.payload.events[0].metadata.severity is defined and
+        event.payload.events[0].metadata.severity == "Critical"
+      action:
+        run_workflow_job_template:
+          # Use the EXACT name of your Workflow Job Template in Controller
+          name: "WORKFLOW NAME HERE" 
+          # Use the EXACT name of your Organization in Controller
+          organization: "Default" 
+          job_args:
+            extra_vars: 
+              # Pass event details for logging or potential use in workflow
+              insights_event_trigger: "{{ event.payload }}"
