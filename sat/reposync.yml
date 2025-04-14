@@ -1,0 +1,16 @@
+---
+- name: Sync Critical Repositories in Satellite
+  hosts: localhost # Run against Satellite API
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: Synchronize BaseOS and AppStream Repos for RHEL 8 (Example)
+      theforeman.satellite.repository_sync:
+        username: "{{ satellite_username }}" # From Credential
+        password: "{{ satellite_password }}" # From Credential
+        server_url: "{{ satellite_server_url }}" # Define in JT or inventory
+        organization: "{{ satellite_organization }}" # Define in JT or inventory
+        repositories:
+          - BaseOS x86_64 8 # Adjust repo names as needed
+          - AppStream x86_64 8
+      # Add error handling as needed
