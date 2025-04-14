@@ -1,0 +1,14 @@
+---
+- name: Apply System Updates
+  hosts: all # Target hosts defined by Inventory/Limit in Job Template
+  become: yes # Need root privileges
+  gather_facts: no
+  tasks:
+    - name: Update all packages using DNF
+      ansible.builtin.dnf:
+        name: '*'
+        state: latest
+        update_cache: yes
+      # Use ansible.builtin.yum for RHEL 7/CentOS 7
+      # Add options like excluding kernel if needed
+      # Add error handling/reboot logic if needed
